@@ -1,0 +1,164 @@
+name: Auto Optimize Wallpaper and Generate JSON
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'raw_images/**' # Skrip hanya berjalan jika ada file baru di folder ini
+
+permissions:
+  contents: write # Memberikan izin kepada robot GitHub untuk menulis & menyimpan file baru
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install Dependencies
+      run: pip install Pillow
+
+    - name: Run Script Optimization
+      run: |
+        python -c "
+        import os, json
+        from PIL import Image
+        
+        os.makedirs('images', exist_ok=True)
+        wp_list = []
+        id_idx = 1
+        
+        # Urutkan file agar ID yang digenerate rapi
+        files = sorted(os.listdir('raw_images'))
+        
+        for f in files:
+            if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')) and f != '.gitkeep':
+                img = Image.open(f'raw_images/{f}')
+                
+                # Konversi ke mode RGB jika gambar semula bertipe PNG transparan/RGBA
+                if img.mode in ('RGBA', 'P'):
+                    img = img.convert('RGB')
+                
+                # Mengubah ukuran gambar secara proporsional (Lebar 1080px standar potret HP)
+                w_pref = (1080 / float(img.size[0]))
+                h_size = int((float(img.size[1]) * float(w_pref)))
+                img_resized = img.resize((1080, h_size), Image.Resampling.LANCZOS)
+                
+                # Buat nama file keluaran berformat webp
+                name_only = os.path.splitext(f)[0]
+                clean_name = name_only.replace('-', '_').replace(' ', '_')
+                output_name = f'{clean_name}.webp'
+                
+                # Simpan dengan kompresi webp kualitas 80%
+                img_resized.save(f'images/{output_name}', 'WEBP', quality=80)
+                
+                # Format judul agar rapi untuk ditampilkan di UI Aplikasi Android
+                display_title = name_only.replace('-', ' ').replace('_', ' ').title()
+                
+                wp_list.append({
+                    'id': id_idx,
+                    'title': display_title,
+                    'category': 'General',
+                    'url': f'https://raw.githubusercontent.com/${{ github.repository }}/main/images/{output_name}'
+                })
+                id_idx += 1
+                
+        with open('wallpapers.json', 'w', encoding='utf-8') as jf:
+            json.dump(wp_list, jf, indent=2, ensure_ascii=False)
+        "
+
+    - name: Commit and Push Changes Automatically
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action Bot"
+        git add images/ wallpapers.json
+        git commit -m "Ubah gambar ke WebP dan update wallpapers.json secara otomatis" || exit 0
+        git push
+
+===============================================
+raw_images/.gitkeep
+===============================================
+
+============================================
+guides.json
+============================================
+
+[
+  {
+    "id": 1,
+    "title": "How to Register and Setup Your First World in Toca Boca",
+    "game_name": "Toca Boca World",
+    "content": "Welcome to the ultimate beginner guide for Toca Boca World! If you are a new player, you might be wondering how to register an account and start building your dream world. The good news is that Toca Boca World is incredibly user-friendly and does not require a traditional email registration process. When you first download the game from the official Google Play Store or Apple App Store, the game automatically binds your progress to your device storage or your local Google Play Games / Apple Game Center account. This means you do not have to memorize any usernames or passwords to play. To start, tap the application icon on your smartphone. You will be greeted by a vibrant splash screen followed by a large, tempting 'Play' button in the center. Before you hit that button, it is vital to ensure your device has sufficient storage space and that you have granted the app permission to access your local storage. Without this permission, the game might fail to save your customized progress or building modifications when you close it. Once you press the Play button, the game will automatically generate your first free city, known as Bop City. This serves as your central hub. If you ever switch to a new phone and want to transfer your world, make sure you are logged into the same Google Play Games profile before installing the app. The cloud sync will automatically detect your old save and restore your purchased buildings, characters, and custom decorations smoothly. Now that your world is initialized, let us move to the next phase: navigation and customization.",
+    "image_url": "https://raw.githubusercontent.com/ealimiteless/my-wallpaper-assets/main/images/file_1675781871465.webp"
+  },
+  {
+    "id": 2,
+    "title": "Mastering Navigating Bop City and Free Locations",
+    "game_name": "Toca Boca World",
+    "content": "Navigating the massive ecosystem of Toca Boca World can feel overwhelming at first, but mastering the user interface is simple once you know the basics. When you enter the world map, you can swipe left or right to explore different thematic districts. As a free player, your journey begins in Bop City, a bustling metropolitan area packed with several interactive locations that cost absolutely nothing. The most notable free locations include the Open Apartment, the Department Store, the Theater, and the Hair Salon. To enter any building, simply tap on it from the map view. Inside, you will find an environment filled with hundreds of interactive objects. You can tap, drag, and drop items to interact with them. For instance, in the Hair Salon, you can drag different hair dyes onto characters to change their look instantly, or use the scissors to cut their hair. If you make a mistake, do not panic! There is a magical reset button located on the top right corner of the main world map screen. Tapping this button restores all free buildings and items back to their original default states, which is perfect if your city gets too messy. Navigating between floors is also easy; look for elevators or stairs on the edges of the screen. Always remember that exploring every nook and cranny is key. Tap on closed doors, open refrigerators, and peer behind curtains because Toca Boca developers love hiding interactive easter eggs in plain sight. Spend your time getting familiar with Bop City before moving on to advanced character creation.",
+    "image_url": "https://raw.githubusercontent.com/ealimiteless/my-wallpaper-assets/main/images/file_1675781871580.webp"
+  },
+  {
+    "id": 3,
+    "title": "Ultimate Guide to Creating Unique Characters",
+    "game_name": "Toca Boca World",
+    "content": "One of the most powerful features in Toca Boca World is the Character Creator tool, which allows you to bring your inner imagination to life. To access this tool, look for the icon featuring a person silhouette with a plus sign at the top right of the city map screen. As a free-tier player, the game generously allows you to create up to three custom characters from scratch, while premium upgrades expand this limit significantly. When you enter the character creation matrix, you are presented with an exhaustive list of customization sliders. You can alter skin tones, selecting from natural shades to fantasy colors like blue or green. Next, browse through dozens of hairstyles including braids, curls, mohawks, and long flowing locks. You can apply two-tone gradients to give your character a trendy look. The clothing section is equally impressive, offering everything from casual hoodies, school uniforms, and pajamas to wacky costumes like astronaut suits or clown outfits. Do not forget to explore the accessories tab, where you can equip your characters with glasses, hats, headphones, and face paint. Beyond aesthetics, you can also select facial expressions to define your character's default mood—whether they are joyous, grumpy, surprised, or sleepy. Once you are completely satisfied with your design, tap the checkmark button in the bottom corner to save your creation. Your brand new character will instantly appear in the character sidewalk dock at the bottom of the screen inside any building, ready to be dragged into your storylines and adventures.",
+    "image_url": "https://raw.githubusercontent.com/ealimiteless/my-wallpaper-assets/main/images/file_1675781871670.webp"
+  },
+  {
+    "id": 4,
+    "title": "How to Find Secret Crumpets in Bop City Storage",
+    "game_name": "Toca Boca World",
+    "content": "Secret hunting is a massive part of what makes Toca Boca World so addictive, and nothing is more sought after than Crumpets. Crumpets are tiny, adorable secret creatures hidden throughout the game world. While there are dozens of them scattered across various paid DLC expansions, Bop City holds a massive secret laboratory for creating them completely for free inside the Storage area. The Storage facility is the building located on the far left of Bop City, resembling an old junkyard or warehouse. To unlock the secret crumpets, you need to combine specific everyday items using specific characters. First, bring the character named Rita (the girl with the green beanie) and Ziggy (the boy with the blue hair) into the Storage area. Next, start scanning the shelves and boxes for hidden combinations. For example, if you make Rita hold a golden joystick (found in the apartment) and a disco ball (found in the storage), a futuristic Robot Crumpet will magically pop out from the ground! Another amazing combination requires Ziggy to hold a slice of pizza and a rose; doing this unlocks a cute Food Crumpet. There are over 10 free crumpets hidden within this single mechanic. You can even build a secret treehouse home for them using the wooden boxes found in the junkyard. Collect them all, line them up on the shelves, and show off your ultimate creature-hunting skills to your friends. Keep experimenting with different item combinations, because you never know what wacky creature you might accidentally summon next!",
+    "image_url": "https://raw.githubusercontent.com/ealimiteless/my-wallpaper-assets/main/images/file_1675781871755.webp"
+  },
+  {
+    "id": 5,
+    "title": "Decorating Your Dream Apartment on a Budget",
+    "game_name": "Toca Boca World",
+    "content": "Interior design enthusiasts will absolutely love the Home Designer feature in Toca Boca World. Even if you are playing on a budget without spending real money on paid furniture packs, the free Open Apartment in Bop City offers ample room for creative expression. When you step inside your apartment, tap the blue construction crane icon on the top right toolbar to enter Edit Mode. This mode opens an expansive catalog sorted by room categories: living room, kitchen, bedroom, and bathroom. Before placing furniture, start with the fundamentals: wallpaper and flooring. You can choose from modern minimalist concrete patterns, cute pastel floral designs, or vibrant geometric shapes to set the mood for each room partition. Next, clear out any default clutter to give yourself a blank canvas. When arranging the living area, place a cozy sofa facing a flat-screen television, and accent it with indoor plants to bring life to the space. In the kitchen area, make sure to align the refrigerator, stove, and sink sequentially for an ergonomic cooking workflow. You can stock the cabinets with free plates, cups, and groceries found at the Bop City Department Store. For the bedroom, use bunk beds if you plan on housing multiple characters, saving precious floor space for toy chests or a study desk. The key to premium-looking design on a free budget is layering; place small rugs under chairs, hang paintings on empty walls, and add table lamps to create warm, ambient lighting that makes your digital apartment feel truly alive.",
+    "image_url": "https://raw.githubusercontent.com/ealimiteless/my-wallpaper-assets/main/images/file_1675781871846.webp"
+  },
+  {
+    "id": 6,
+    "title": "Creative Storytelling and Roleplay Ideas for Beginners",
+    "game_name": "Toca Boca World",
+    "content": "Toca Boca World is fundamentally a digital dollhouse, meaning there are no pre-written missions, linear quests, or strict gameplay rules. The true magic of the game stems entirely from your own imagination through storytelling and roleplay. If you are staring at the screen wondering what to do next, here are several creative storytelling frameworks to jumpstart your adventures. A classic favorite is the 'Rich vs. Poor' scenario, where you create a character living in a minimalist, cluttered room who gradually finds hidden treasures around Bop City, eventually upgrading their lifestyle and moving into a fully furnished luxury space. Another fun roleplay idea is running a bustling local business. You can take your characters to the Bop City Food Court or Department Store, appointing one character as the demanding head chef, another as the clumsy waiter, and a third as a famous food critic visiting for a surprise inspection. You can use the built-in screen recording software on your Android phone to capture these interactions, add voiceovers, and create your very own Toca mini-series to upload on social media. For drama enthusiasts, try staging an elaborate mystery narrative: hide a valuable item like the diamond or a rare crumpet somewhere in the theater, and have a team of detective characters search for clues, interview witnesses, and solve the crime. The possibilities are infinite, bounded only by your willingness to experiment with characters and scenarios.",
+    "image_url": "https://raw.githubusercontent.com/ealimiteless/my-wallpaper-assets/main/images/file_1675781871969.webp"
+  },
+  {
+    "id": 7,
+    "title": "How to Find Hidden Diamonds in Toca Boca World",
+    "game_name": "Toca Boca World",
+    "content": "Aside from Crumpets, rare gemstones are the ultimate status symbol and collectible items in Toca Boca World. Scattered across the environment are beautifully cut, glittering diamonds of various colors. Finding them requires sharp eyes and a bit of puzzle-solving knowledge. In the free version of Bop City, there are several hidden diamonds waiting to be unearthed. The first and most famous one is the Clear Diamond, located inside the Department Store. Go to the upper floor where the toys and electronics are sold. Look closely at the background decoration behind the arcade machine; you will see a small, subtle wall panel that looks loose. Tap on it to open a secret compartment revealing the glittering diamond hidden inside! The second gem is the Yellow Diamond, hidden inside the Theater. Navigate to the backstage dressing room area where actors apply their makeup. Look for a painting hanging on the wall; tap and slide the painting upwards to reveal a wall safe. To open this safe, you need to find a hidden key card hidden inside a poster tube on the lower level. Slide the card, open the safe, and claim your valuable prize. Finding these diamonds gives you great props for your characters to hold during luxury roleplay scenarios. Create a vault inside your apartment to store these gems safely, turning your home into the most secure and wealthy estate in all of Bop City.",
+    "image_url": "https://raw.githubusercontent.com/ealimiteless/my-wallpaper-assets/main/images/file_1675781872083.webp"
+  },
+  {
+    "id": 8,
+    "title": "A Guide to Free Food Recipes and Cooking Mechanics",
+    "game_name": "Toca Boca World",
+    "content": "Did you know that Toca Boca World features a fully functional cooking combination matrix? You do not need to buy expensive kitchen DLC packs to become a master chef; the free kitchens in the Open Apartment and the local Food Court provide all the tools you need to prepare gourmet meals. The cooking mechanic is intuitive: pick up a base ingredient with one hand, drag it over a secondary ingredient, and drop it. If the combination is valid, the two items will instantly merge into a beautifully plated dish. Let us explore some essential free recipes you can cook right now using basic ingredients from the Department Store grocery aisle. Combining Chicken and a Potato will yield a delicious plate of Roast Chicken with French Fries. If you take a loaf of Bread and combine it with a Cheddar Cheese block, your character will instantly craft a golden Grilled Cheese Sandwich. For dessert lovers, try combining a Strawberry with a bag of Sugar to bake a gourmet Strawberry Tart. You can also interact with kitchen appliances; dragging raw meat onto a frying pan or a hot stove will trigger a realistic sizzling sound effect and change the texture of the food to a cooked state. Serving these meals to characters will trigger unique eating animations and expressions based on whether they like the food. Set up a restaurant in your apartment and start serving your custom creations!",
+    "image_url": "https://raw.githubusercontent.com/ealimiteless/my-wallpaper-assets/main/images/file_1675781872208.webp"
+  },
+  {
+    "id": 9,
+    "title": "Unlocking Easter Eggs and Funny Interactions in the Theater",
+    "game_name": "Toca Boca World",
+    "content": "The Bop City Theater is arguably one of the most dynamic and feature-dense free locations in Toca Boca World, acting as a sandbox for funny interactions and hidden easter eggs. When you enter the Theater, you are presented with a grand stage equipped with controllable curtains, lighting rigs, and background scenery sliders. Tap the control panel on the left side of the stage to cycle through different backdrops, shifting the environment from a spooky haunted forest to a peaceful outer space setting. But the real fun lies in the dressing room located to the right of the stage. Here, you will find a massive wardrobe filled with wacky costumes including swan outfits, medieval armor, pirate gear, and superhero capes. Dragging these costumes onto characters instantly transforms their appearance. Furthermore, look for the green slime bucket sitting under the makeup table. If you dip a character's head into the bucket, their hair will turn into a messy, slimed green state that stays even when they leave the building! Don't forget to check the instrument rack on the left side of the stage; characters can hold and actively play the guitar, drums, and microphone, syncing up to create a hilarious local rock band. The Theater is designed for chaotic fun, so bring a full roster of custom characters and start staging the wildest theatrical production Bop City has ever seen.",
+    "image_url": "https://raw.githubusercontent.com/ealimiteless/my-wallpaper-assets/main/images/file_1675781872299.webp"
+  },
+  {
+    "id": 10,
+    "title": "Tips to Keep Your Toca World Safe and Manage Save Data",
+    "game_name": "Toca Boca World",
+    "content": "As you spend hours building apartments, customizing characters, and collecting rare crumpets, protecting your progress and managing your save data becomes incredibly important. Because Toca Boca World targets modern Android architectures, it relies heavily on your device's internal Scoped Storage guidelines. To prevent accidental data loss, never clear the application's cache or data directory from your Android settings menu, as doing so will wipe your local save completely. If your game begins to stutter or lag due to having too many items scattered across Bop City, avoid uninstalling the app. Instead, use the built-in 'Reset World' button on the main map screen. While this will return items to their original spots, it is a safe way to clear memory lag without corrupting your profile database. For parents or players managing purchases, always ensure that 'In-App Purchase Authentication' is enabled in your Google Play Store settings to prevent accidental premium buys. Lastly, if you ever experience a glitch where purchased locations disappear, simply tap the 'Shop' icon on the main menu and press the 'Restore Purchases' button at the bottom of the screen. This forces a secure handshake with the Google Play billing server and instantly restores your world back to its rightful state, keeping your digital playground safe, secure, and ready for your next adventure.",
+    "image_url": "https://raw.githubusercontent.com/ealimiteless/my-wallpaper-assets/main/images/file_1675781872418.webp"
+  }
+]
